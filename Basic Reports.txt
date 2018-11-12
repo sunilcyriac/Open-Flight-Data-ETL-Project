@@ -1,0 +1,47 @@
+--Reports
+
+--Report 1
+
+SELECT * FROM (SELECT
+source_airport_id,
+ROUND(SUM(total_passenger_age)/sum(total_num_of_passengers),2) as AVERAGE_AGE
+FROM
+(SELECT DISTINCT t.passid,t.source_airport_id,t.total_passenger_age,t.total_num_of_passengers, s.COUNTRY  as country,f.flightdate,t.TOTAL_PAID,f.FARE
+FROM TRANSACTION_FACT_V2 t,
+PASSENGER_DIM_V2 p,
+Source_Airport_DIM_V2 s,
+FLIGHT_DIM_V2 f
+where
+t.passid=p.passid
+and
+t.source_airport_id=s.source_airport_id
+and
+f.flightid=t.FLIGHTID
+and
+(t.TOTAL_PAID >= 1.5*f.FARE AND t.TOTAL_PAID < 2*f.FARE)
+and
+s.COUNTRY='Australia'
+)
+GROUP BY
+source_airport_id
+ORDER BY
+AVERAGE_AGE DESC)
+WHERE rownum <=3;
+
+
+--Report 2
+
+
+SELECT TO_CHAR(p.joindate,'MM')   AS MONTH,
+  SUM(msf.total_number_of_members) AS newly_joined_member
+FROM passenger_dim_v2 p,
+  membership_type_dim_v2 m,
+  membership_sales_fact_v2 msf
+WHERE p.passid = msf.passid
+AND p.joindate = msf.joindate
+AND m.membershiptypeid = msf.membershiptypeid
+AND p.age <= 60
+AND p.age >= 18
+AND m.membershipname   = 'Gold'
+GROUP BY TO_CHAR(p.joindate,'MM')
+ORDER BY TO_CHAR(p.joindate,'MM');

@@ -1,0 +1,16 @@
+--Report 4
+
+SELECT
+DECODE(GROUPING(a.AIRLINE_ID), 1, 'ANY AIRLINES', a.AIRLINE_ID) as AIRLINE_ID,
+DECODE(GROUPING(sa.source_airport_ID), 1, 'ANY AIRPORTS', sa.source_airport_ID) as AIRPORTS,
+sum(t.total_agent_profit)
+from
+AIRLINE_DIM_v1 a,
+TRANSACTION_FACT_v1 t,
+SOURCE_AIRPORT_DIM_v1 sa
+where
+a.AIRLINE_ID=t.AIRLINE_ID
+and
+t.source_airport_ID=sa.source_airport_ID
+group by cube(a.AIRLINE_ID,sa.source_airport_ID)
+order by a.AIRLINE_ID,sa.source_airport_ID;

@@ -1,0 +1,23 @@
+--Report 3
+select distinct td.year AS FLIGHT_YEAR,
+DECODE(GROUPING(ft.flight_type_name), 1, 'ANY Types', ft.flight_type_name) as FLIGHT_TYPE,
+DECODE(GROUPING(fc.flight_class_name), 1, 'ANY Classes', fc.flight_class_name) as FLIGHT_CLASS,
+DECODE(GROUPING(a.country), 1, 'Any Country', a.country)as sourceCountry,
+DECODE(GROUPING(b.country), 1, 'Any Country', b.country)as destinationCountry,
+sum(t.total_num_of_passengers) as number_of_transactions,
+round(sum((t.total_agent_profit)/t.total_num_of_passengers),1) as average_agent_profit
+from source_airport_dim_v1 a,
+dest_airport_dim_v1 b,
+airline_dim_v1 ad,
+flight_type_dim_v1 ft,
+flight_class_dim_v1 fc,
+time_dim_v1 td,
+transaction_fact_v1 t
+where (t.source_airport_ID = a.source_airport_ID and t.dest_airport_id = b.dest_airport_id)
+and ad.airline_ID = t.airline_ID
+and t.flight_type_id = ft.flight_type_id
+and t.flight_class_id = fc.flight_class_id
+and td.time_id = t.time_id
+group by td.year, cube(ft.flight_type_name, fc.flight_class_name,
+a.country , b.country)
+order by td.year;

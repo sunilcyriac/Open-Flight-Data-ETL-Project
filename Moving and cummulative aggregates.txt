@@ -1,0 +1,11 @@
+select mt.membershipname, td.month, sum(msf.total_number_of_members) as TOTAL_NUMBER_OF_MEMBERS,
+TO_CHAR(sum(msf.total_membership_sales),'9,999,999') as total_sale,
+to_char(sum(sum(msf.total_membership_sales)) OVER
+(ORDER BY mt.membershipname, td.month rows unbounded PRECEDING),'9,999,999') as TOTAL_SALE_CUMMULATIVE
+from membership_type_dim_v1 mt, membership_sales_fact_v1 msf, time_dim_v1 td
+where mt.membershiptypeid = msf.membershiptypeid and msf.time_id = td.time_id
+and mt.membershipname = 'Gold'
+and td.year = 2009
+group by
+mt.membershipname, td.month
+order by td.month;

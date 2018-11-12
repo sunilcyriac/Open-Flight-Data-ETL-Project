@@ -1,0 +1,82 @@
+select * from airports where airportid < 0;
+
+delete from airports where airportid<0;
+
+select * from airlines order by airlineid;
+delete from airlines where airlineid <0;
+
+select * from routes order by routeid;
+select * from routes where routeid<0;
+
+delete from routes where routeid<0;
+
+select * from flights f, airports a, airports b,routes r
+where f.routeid = r.routeid
+and a.timezone = b.timezone
+and r.sourceairportid = a.airportid
+and r.destairportid  = b.airportid
+and f.departtime > f.arrivaltime;
+
+delete from flights where flightid in (select f.flightid from flights f, airports a, airports b,routes r
+where f.routeid = r.routeid
+and a.timezone = b.timezone
+and r.sourceairportid = a.airportid
+and r.destairportid  = b.airportid
+and f.departtime > f.arrivaltime);
+
+
+select * from passengers where age<0;
+
+update passengers set age = (-1) * age where age<0;
+commit;
+
+select * from transactions where flightid not in (select flightid from flights);
+
+delete from transactions where flightid not in (select flightid from flights);
+commit;
+
+
+select * from routes where airlineid not in (select airlineid from airlines);
+
+delete from routes where airlineid not in (select airlineid from airlines);
+
+select * from flights where aircraftid not in (select iatacode from aircrafts);
+
+delete from flights where aircraftid not in (select iatacode from aircrafts);
+
+select * from flights where aircraftid not in (select iatacode from aircrafts);
+
+select * from 
+(select * from aircrafts) b join
+(
+select ICAOCODE,MANUFACTURER,MODEL,wakecategory from aircrafts group by ICAOCODE,MANUFACTURER,MODEL,wakecategory having count(*) >1) a
+on
+b.ICAOCODE =a.ICAOCODE and b.MANUFACTURER = a.MANUFACTURER and b.MODEL = a.MODEL 
+and b.wakecategory =a.wakecategory order by b.ICAOCODE,b.MANUFACTURER,b.MODEL,b.wakecategory asc;
+
+
+select * from opfl.aircrafts where IATACODE in ('100' ,
+'99'  ,
+'98' , 
+'97',  
+'96',  
+'95');
+
+
+select distinct aircraftid from opfl.flights where aircraftid in ('100' ,
+'99'  ,
+'98' , 
+'97',  
+'96','95');
+
+delete from aircrafts where iatacode in (
+'99'  ,
+'98' , 
+'97',  
+'96',  
+'95');
+
+
+
+
+

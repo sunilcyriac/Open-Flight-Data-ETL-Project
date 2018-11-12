@@ -1,0 +1,196 @@
+
+  
+  V2: Level 0 -- With details and no aggregation
+  
+create table Membership_Type_DIM_V2 as select membershiptypeid, membershipname from membershiptype;
+
+Create table Membership_Price_DIM_V2
+  as select distinct mjr.membershiptypeid, p.startdate, p.enddate,
+  mt.membershipfee*(1-nvl(p.discount,0)) as MembershipFee
+  from membershipjoinrecords mjr
+  join promotion p
+  on mjr.promotion = p.promotionid
+  join membershiptype mt
+  on mt.membershiptypeid = mjr.membershiptypeid;
+  
+  insert into membership_price_dim_V2 values('M1',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),399);
+  insert into membership_price_dim_V2 values('M2',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),599);
+  insert into membership_price_dim_V2 values('M3',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),799);
+  insert into membership_price_dim_V2 values('M4',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),999);
+
+  
+  insert into membership_price_dim_V2 values('M1',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),399);
+  insert into membership_price_dim_V2 values('M2',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),599);
+  insert into membership_price_dim_V2 values('M3',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),799);
+  insert into membership_price_dim_V2 values('M4',to_date('1-Sep-05','DD-MON-YY'),to_date('31-Oct-06','DD-MON-YY'),999);
+
+  
+  insert into membership_price_dim_V2 values('M1',to_date('1-May-08','DD-MON-YY'),to_date('29-Feb-12','DD-MON-YY'),399);
+  insert into membership_price_dim_V2 values('M2',to_date('1-May-08','DD-MON-YY'),to_date('29-Feb-12','DD-MON-YY'),599);
+  insert into membership_price_dim_V2 values('M3',to_date('1-May-08','DD-MON-YY'),to_date('29-Feb-12','DD-MON-YY'),799);
+  insert into membership_price_dim_V2 values('M4',to_date('1-May-08','DD-MON-YY'),to_date('29-Feb-12','DD-MON-YY'),999);
+
+  
+  insert into membership_price_dim_V2 values('M1',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),399);
+  insert into membership_price_dim_V2 values('M2',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),599);
+  insert into membership_price_dim_V2 values('M3',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),799);
+  insert into membership_price_dim_V2 values('M4',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),999);
+
+  insert into membership_price_dim_V2 values('M1',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),399);
+  insert into membership_price_dim_V2 values('M2',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),599);
+  insert into membership_price_dim_V2 values('M3',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),799);
+  insert into membership_price_dim_V2 values('M4',to_date('1-May-12','DD-MON-YY'),to_date('31-Dec-12','DD-MON-YY'),999);
+  
+  commit;
+
+  
+
+create table Passenger_DIM_V2 as select * from passengers;
+
+
+create table flight_dim_v2 as select flightid, flightdate,departtime,arrivaltime,fare from flights;
+
+create table route_dim_v2 as select routeid,stops,equipment,newlyopened from routes;
+
+
+commit;
+-------
+
+create table Airline_DIM_V2
+as select a.airlineID as airline_ID,
+  ROUND(1/COUNT(*),2) AS service_weight,
+  listagg(s.name,'__') within GROUP 
+  (ORDER BY s.name) AS List_of_services
+FROM airlines a,
+  airline_services s,
+  provides p
+WHERE a.airlineID = p.airlineID
+AND p.serviceID   = s.serviceID
+GROUP BY a.airlineId,a.name;
+ 
+Create table Provides_Bridge_DIM_V2 as select * from provides;
+
+Create table Services_DIM_V2 as 
+select * from Airline_Services;
+
+  
+
+
+------
+
+create table Source_Airport_DIM_V2
+as select distinct airportID as Source_airport_ID,
+Name as source_airport_Name,
+city, country,timezone,dst
+from airports;
+
+
+create table Dest_Airport_DIM_V2
+as select distinct airportID as Dest_airport_ID,
+Name as Dest_airport_Name,
+city, country,timezone,dst
+from airports;
+
+CREATE TABLE PASSENGER_DIM_V2
+AS SELECT
+  p.PASSID,
+  p.FIRSTNAME,
+  p.LASTNAME,
+  p.NATIONALITY,
+  p.AGE,
+  m.JOINDATE
+FROM
+  PASSENGERS p
+LEFT OUTER JOIN
+  MEMBERSHIPJOINRECORDS m
+ON m.PASSID = p.PASSID;
+  
+  
+  CREATE TABLE ROUTE_FACT_V2
+AS SELECT DISTINCT
+   r.SOURCEAIRPORTID as source_airport_id,
+   r.DESTAIRPORTID as dest_airport_id,
+   r.routeid,
+   a.AIRLINEID as airline_ID,
+  COUNT(DISTINCT r.routeid) AS Total_num_routes,
+  SUM(r.DISTANCE) AS Total_distance,
+  COUNT(DISTINCT p.SERVICEID) as Total_number_of_services,
+  SUM(r.SERVICECOST) AS Total_service_cost
+FROM
+  AIRLINES a,
+  ROUTES r,
+  PROVIDES p
+WHERE
+  r.AIRLINEID=a.AIRLINEID
+AND
+  a.AIRLINEID=p.AIRLINEID
+GROUP BY
+  a.AIRLINEID,
+  r.routeid,
+  r.SOURCEAIRPORTID, r.DESTAIRPORTID;
+  
+  
+ 
+
+
+  
+
+
+
+CREATE TABLE TRANSACTION_FACT_V2
+AS SELECT
+  o.ROUTEID,
+  f.FLIGHTID,
+  o.SOURCEAIRPORTID as source_airport_ID,
+  o.DESTAIRPORTID as dest_airport_id,
+  p.PASSID,
+  SUM(t.TOTALPAID) AS TOTAL_PAID,
+  SUM(f.FARE) AS TOTAL_FARE,
+  SUM(p.AGE) AS TOTAL_PASSENGER_AGE,
+  COUNT(P.PASSID) AS TOTAL_NUM_OF_PASSENGERS,
+  (SUM(t.TOTALPAID)-SUM(f.FARE)) AS TOTAL_AGENT_PROFIT
+FROM
+  ROUTES o
+JOIN  FLIGHTS f
+ON o.ROUTEID = f.ROUTEID
+JOIN TRANSACTIONS t
+ON t.FLIGHTID = f.FLIGHTID
+LEFT OUTER JOIN PASSENGERS p
+ON p.PASSID = t.PASSID
+GROUP BY
+  o.ROUTEID,
+  f.FLIGHTID,
+  o.SOURCEAIRPORTID,
+  o.DESTAIRPORTID,
+  p.PASSID;
+
+ 
+ 
+
+ 
+ 
+ CREATE TABLE MEMBERSHIP_SALES_FACT_V2 AS
+    SELECT
+      MJR.PASSID,
+      MJR.JOINDATE,
+      MT.MEMBERSHIPTYPEID,
+      COUNT(MJR.PASSID) AS TOTAL_NUMBER_OF_MEMBERS,
+      SUM(MT.MEMBERSHIPFEE*(1-NVL((PR.DISCOUNT),0))) AS TOTAL_MEMBERSHIP_SALES
+    FROM MEMBERSHIPJOINRECORDS MJR
+      LEFT OUTER JOIN PROMOTION PR
+        ON PR.PROMOTIONID = MJR.PROMOTION
+      JOIN MEMBERSHIPTYPE MT
+        ON MJR.MEMBERSHIPTYPEID = MT.MEMBERSHIPTYPEID
+    GROUP BY
+      MJR.PASSID,
+      MJR.JOINDATE,
+      MT.MEMBERSHIPTYPEID;
+
+ 
+
+
+
+
+
+
+

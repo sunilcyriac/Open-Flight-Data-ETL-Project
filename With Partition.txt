@@ -1,0 +1,15 @@
+select
+  dst.country,
+  dst.City,
+  dst.dest_airport_id,
+  sum(rf.TOTAL_NUM_ROUTES) as TOTAL_ROUTES,
+  RANK() OVER (PARTITION BY dst.COUNTRY ORDER BY SUM(RF.TOTAL_NUM_ROUTES) DESC) AS RANK1
+
+From
+  dest_airport_dim_v1 dst,
+  Route_fact_v1 rf
+where
+  rf.dest_airport_id = dst.dest_airport_id
+GROUP BY dst.country,
+  dst.City,
+  dst.dest_airport_id;

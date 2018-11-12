@@ -1,0 +1,168 @@
+--Query optimization
+
+--original query report 3
+
+select distinct td.year AS FLIGHT_YEAR,
+DECODE(GROUPING(ft.flight_type_name), 1, 'ANY Types', ft.flight_type_name) as FLIGHT_TYPE,
+DECODE(GROUPING(fc.flight_class_name), 1, 'ANY Classes', fc.flight_class_name) as FLIGHT_CLASS,
+DECODE(GROUPING(a.country), 1, 'Any Country', a.country)as sourceCountry,
+DECODE(GROUPING(b.country), 1, 'Any Country', b.country)as destinationCountry,
+sum(t.total_num_of_passengers) as number_of_transactions,
+round(sum((t.total_agent_profit)/t.total_num_of_passengers),1) as average_agent_profit
+from source_airport_dim_v1 a,
+dest_airport_dim_v1 b,
+airline_dim_v1 ad,
+flight_type_dim_v1 ft,
+flight_class_dim_v1 fc,
+time_dim_v1 td,
+transaction_fact_v1 t
+where (t.source_airport_ID = a.source_airport_ID and t.dest_airport_id = b.dest_airport_id)
+and ad.airline_ID = t.airline_ID
+and t.flight_type_id = ft.flight_type_id
+and t.flight_class_id = fc.flight_class_id
+and td.time_id = t.time_id
+group by td.year, cube(ft.flight_type_name, fc.flight_class_name,
+a.country , b.country)
+order by td.year;
+
+
+--new query
+
+select SUBSTR(t.time_id,5,4) as FLIGHT_YEAR,
+DECODE(GROUPING(ft.flight_type_name), 1, 'ANY Types', ft.flight_type_name) as FLIGHT_TYPE,
+DECODE(GROUPING(fc.flight_class_name), 1, 'ANY Classes', fc.flight_class_name) as FLIGHT_CLASS,
+DECODE(GROUPING(a.country), 1, 'Any Country', a.country)as sourceCountry,
+DECODE(GROUPING(b.country), 1, 'Any Country', b.country)as destinationCountry,
+sum(t.total_num_of_passengers) as number_of_transactions,
+round(avg(t.total_agent_profit),1) as average_agent_profit
+from SOURCE_AIRPORT_DIM_v1 a,
+DEST_AIRPORT_DIM_V1 b,
+airline_dim_v1 ad,
+transaction_fact_v1 t,
+flight_type_dim_v1 ft,
+flight_class_dim_v1 fc
+where (t.source_airport_ID = a.source_airport_ID and t.dest_airport_id = b.dest_airport_id)
+and ad.airline_ID = t.airline_ID
+and t.flight_type_id = ft.flight_type_id
+and t.flight_class_id = fc.flight_class_id
+group by SUBSTR(t.time_id,5,4),
+cube(ft.flight_type_name, fc.flight_class_name,
+a.country , b.country);
+
+
+
+
+--original query report 4
+
+SELECT
+DECODE(GROUPING(a.AIRLINE_ID), 1, 'ANY AIRLINES', a.AIRLINE_ID) as AIRLINE_ID,
+DECODE(GROUPING(sa.source_airport_ID), 1, 'ANY AIRPORTS', sa.source_airport_ID) as AIRPORTS,
+sum(t.total_agent_profit)
+from
+AIRLINE_DIM_v1 a,
+TRANSACTION_FACT_v1 t,
+SOURCE_AIRPORT_DIM_v1 sa
+where
+a.AIRLINE_ID=t.AIRLINE_ID
+and
+t.source_airport_ID=sa.source_airport_ID
+group by cube(a.AIRLINE_ID,sa.source_airport_ID)
+order by a.AIRLINE_ID,sa.source_airport_ID;
+
+
+
+
+--new query
+SELECT AIRLINE_ID,AIRPORTS, total_agent_profit
+FROM (
+SELECT
+DECODE(GROUPING(a.AIRLINE_ID), 1, 'ANY AIRLINES', a.AIRLINE_ID) as AIRLINE_ID,
+DECODE(GROUPING(sa.source_airport_ID), 1, 'ANY AIRPORTS', sa.source_airport_ID) as AIRPORTS,
+sum(t.TOTAL_PAID_TICKET_PRICE -t.total_fare) as total_agent_profit
+from
+AIRLINE_DIM_v1 a
+inner join
+TRANSACTION_FACT_v1 t on
+a.AIRLINE_ID=t.AIRLINE_ID
+inner join
+SOURCE_AIRPORT_DIM_v1 sa on
+t.source_airport_ID=sa.source_airport_ID
+group by cube(a.AIRLINE_ID,sa.source_airport_ID))A;
+
+
+--original query Report 5
+
+select mt.membershipname, td.month, sum(msf.total_number_of_members) as TOTAL_NUMBER_OF_MEMBERS,
+TO_CHAR(sum(msf.total_membership_sales),'9,999,999') as total_sale,
+to_char(sum(sum(msf.total_membership_sales)) OVER
+(ORDER BY mt.membershipname, td.month rows unbounded PRECEDING),'9,999,999') as TOTAL_SALE_CUMMULATIVE
+from membership_type_dim_v1 mt, membership_sales_fact_v1 msf, time_dim_v1 td
+where mt.membershiptypeid = msf.membershiptypeid and msf.time_id = td.time_id
+and mt.membershipname = 'Gold'
+and td.year = 2009
+group by
+mt.membershipname, td.month
+order by td.month;
+
+
+--new query
+select distinct mt.membershipname, 
+SUBSTR(msf.time_id,3,2), 
+sum(msf.total_number_of_members) as TOTAL_NUMBER_OF_MEMBERS,
+TO_CHAR(sum(msf.total_membership_sales),'9,999,999') as total_sale,
+to_char(sum(sum(msf.total_membership_sales)) OVER
+(ORDER BY mt.membershipname,SUBSTR(msf.time_id,3,2) rows unbounded PRECEDING),'9,999,999') as TOTAL_SALE_CUMMULATIVE
+from membership_type_dim_v1 mt,
+membership_sales_fact_v1 msf
+where mt.membershiptypeid = msf.membershiptypeid 
+and mt.membershipname = 'Gold'
+and SUBSTR(msf.time_id,5,4) = 2009
+group by
+mt.membershipname, SUBSTR(msf.time_id,3,2);
+
+
+--original query Report 6
+
+
+select
+  dst.country,
+  dst.City,
+  dst.dest_airport_id,
+  sum(rf.TOTAL_NUM_ROUTES) as TOTAL_NUM_ROUTES,
+  RANK() OVER (PARTITION BY dst.COUNTRY ORDER BY SUM(RF.TOTAL_NUM_ROUTES) DESC) AS RANK1
+
+From
+  dest_airport_dim_v1 dst,
+  Route_fact_v1 rf
+where
+  rf.dest_airport_id = dst.dest_airport_id
+GROUP BY dst.country,
+  dst.City,
+  dst.dest_airport_id;
+  
+  
+  
+  --new query 
+
+  
+  Select * from (
+  select
+  dst.country,
+  dst.City,
+  dst.dest_airport_id,
+  sum(rf.TOTAL_NUM_ROUTES) as TOTAL_NUM_ROUTES,
+  RANK() OVER (PARTITION BY dst.COUNTRY ORDER BY SUM(RF.TOTAL_NUM_ROUTES) DESC) AS RANK1
+
+From
+  dest_airport_dim_v1 dst,
+  Route_fact_v1 rf
+where
+  rf.dest_airport_id = dst.dest_airport_id
+  and rf.dest_airport_id IN(SELECT dest_airport_id FROM dest_airport_dim_v1)
+GROUP BY dst.country,
+  dst.City,
+  dst.dest_airport_id
+  order by
+  dst.country,
+  dst.City,
+  dst.dest_airport_id)a;
